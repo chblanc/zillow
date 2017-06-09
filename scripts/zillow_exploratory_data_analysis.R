@@ -41,18 +41,44 @@ dataDict <- read_xlsx("~/Documents/code/zillow/data/zillow_data_dictionary.xlsx"
 #'  model under-estimated the actual sales price, while posititve values
 #'  mean the opposite. More formally, logerror = log(Zestimate) − log(SalePrice)
 #'  
-#'  `transactiondate`: the date in which the the `parcelid` was sold
-#' 
+#'  `transactiondate`: the date in which the the `parcelid` was sold  
+#'  
+#'  begin by checking for missing values, range of values
 
-# histograms
+map_df(training2016, range)
+
+#' as confirmed on the website, the date range of the sales data stretches
+#' from jan-2016 to december 2016 (one whole year).  
+map_df(training2016, ~ sum(is.na(.x)))
+summary(training2016)
+
+#' no missing values ... not really a surprise, but it's great to know.  
+#' 
+#' next we'll plot a couple of histograms to inspect distributions.
+
+# histogram: logerror
 training2016 %>% 
   qplot(logerror, data=.)
+#' those are some long tails we're dealing with here. but most of the
+#' errors hover around 0.
 
+# histogram: transactiondate
 training2016 %>% 
   qplot(transactiondate, data=.) +
-  scale_x_date()
+  scale_x_date(date_breaks='months')
+
+#' a majority of transactions occur in the summer months, april - september,
+#' and a steep decline takes place in after October. Why aren't people
+#' buying houses in October-December?  *UPDATE*: this is by design...
+#' transactions for this time period were stripped from the training 
+#' dataset and set aside for testing. 
 
 # transactions over time
 training2016 %>% 
   qplot(transactiondate, logerror, data=., geom='line')
 
+training2016 %>% 
+  group_by(transactiondate) %>%
+  summarise(mean_logerror = mean(logerror)) %>%
+  qplot(transactiondate, mean_logerror, data=., geom='line') +
+  geom_hline(yintercept = 0, color = 'red')
